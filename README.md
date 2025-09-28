@@ -1,49 +1,109 @@
-# 🛡️ Bali Shield – Sui Move Smart Contract
+# Bali Shield
 
-Este proyecto implementa un contrato en **Sui Move** que modela escudos con diferentes niveles de poder y rareza.  
-Incluye funciones para **crear, mejorar y transferir** escudos, así como un conjunto de **tests automáticos**.
+Contrato escrito en **Sui Move** que implementa un sistema de escudos (`Shield`) con distintos niveles de poder, tarifas de mejora y funciones de transferencia.
 
----
-
-## ✨ Funcionalidad
-
-El contrato define un `struct Shield` con los campos:
-
-- `resistance`: vida o durabilidad
-- `power`: daño o fuerza
-- `value`: precio o rareza en el juego
-- `stype`: tipo de escudo (`Basic`, `Advanced`, `Epic`)
-
-### Tipos de escudos
-- **Basic**: baja resistencia y costo bajo.  
-- **Advanced**: más poder, valor medio.  
-- **Epic**: alto valor, resistencia y poder.
-
-### Funciones principales
-- `create_basic_shield` → Crea un escudo básico (uso interno o desde tests).  
-- `create_advanced_shield` → Crea un escudo avanzado (uso interno/tests).  
-- `create_epic_shield` → Crea un escudo épico (uso interno/tests).  
-- `upgrade_shield` → Mejora un escudo (Basic → Advanced → Epic).  
-- `transfer_shield` → Transfiere un escudo a otro address.  
-- `create_and_transfer_basic_shield` → **Entry point** para crear y recibir un escudo básico en una transacción.
-
-> ⚠️ Importante: en Sui, **solo las funciones `entry`** se pueden llamar desde la consola o un frontend.  
-> Las demás (`public fun`) sirven como lógica interna, para tests o para que otros módulos las reutilicen.
+La arquitectura está dividida en módulos para mantener el código legible, seguro y fácil de extender.
 
 ---
 
-## 🧪 Tests
+## Arquitectura del contrato
 
-El proyecto incluye un módulo `bali_shield_tests` con pruebas unitarias:
+### `types.move`
+Define las estructuras y funciones principales:
 
-- `test_create_basic_attrs` → Verifica atributos de un escudo básico.  
-- `test_create_advanced_attrs` → Verifica atributos de un escudo avanzado.  
-- `test_create_epic_attrs` → Verifica atributos de un escudo épico.  
-- `test_upgrade_flow` → Verifica el flujo de mejora (Basic → Advanced → Epic).  
-- `test_transfer_ownership_with_scenario` → Simula transferencia de un escudo entre usuarios.  
-- `test_entry_create_and_transfer_basic_shield` → Verifica la creación + transferencia vía entry.
+- `ShieldType`: enum con variantes:
+  - `Basic { bonus_resistance }`
+  - `Advanced { bonus_power }`
+  - `Epic { bonus_value }`
 
-Ejecutar:
+- `Shield`: struct con campos:
+  - `id: UID`
+  - `resistance: u64`
+  - `power: u64`
+  - `value: u64`
+  - `stype: ShieldType`
 
-```bash
-sui move test
+- Funciones:
+  - `new`: constructor genérico de shields.
+  - `make_basic`: helper para crear un shield básico.
+  - Getters y validadores (`is_basic`, `is_advanced`, `is_epic`).
+  - Bonus extractors (`bonus_resistance_of`, `bonus_power_of`, `bonus_value_of`).
+  - `upgrade`: mejora el tipo de escudo (Basic → Advanced → Epic).
+
+---
+
+### `logic.move`
+Implementa la lógica de negocio:
+
+- `create_shield`: combina valores base con bonus según el tipo.
+- `upgrade_shield`: aplica las mejoras de nivel llamando a `types::upgrade`.
+
+---
+
+### `fees.move`
+Gestión de tarifas en SUI:
+
+- Constantes internas:
+  - `BASIC_TO_ADVANCED_FEE = 0.1 SUI`
+  - `ADVANCED_TO_EPIC_FEE = 0.2 SUI`
+  - `TREASURY = @treasury`
+
+- Funciones:
+  - `basic_to_advanced_fee`, `advanced_to_epic_fee`, `treasury`: exponen las constantes.
+  - `charge_fee`: cobra un monto de un `Coin<T>` y lo transfiere a la tesorería.
+
+---
+
+### `errors.move`
+Centraliza los códigos de error:
+
+- `wrong_tier`: error al intentar un upgrade inválido.
+- `insufficient_fee`: error al no tener suficiente balance para la tarifa.
+
+---
+
+### `entries.move`
+Capa de orquestación que combina validaciones, cobro de tarifas y lógica de negocio:
+
+- `upgrade_basic_to_advanced`:
+  - Verifica que el shield sea `Basic`.
+  - Cobra la tarifa correspondiente.
+  - Llama a `logic::upgrade_shield`.
+
+- `create_basic_shield`:
+  - Crea un shield básico con `types::make_basic`.
+
+---
+
+### `transfers.move`
+Funciones de entrada pública (`entry fun`) que interactúan con los usuarios:
+
+- `mint_basic_and_send_to`:
+  - Crea un shield básico con `entries::create_basic_shield`.
+  - Lo transfiere al address indicado.
+
+---
+
+## Flujo de uso
+
+1. **Creación de un shield**  
+   - Llamar `mint_basic_and_send_to` para recibir un shield básico.
+
+2. **Mejora de tier**  
+   - Llamar `upgrade_basic_to_advanced` con:
+     - El shield en propiedad.
+     - Una `Coin<SUI>` con suficiente balance.
+     - El contexto de transacción.
+
+3. **Próximos upgrades**  
+   - Implementar `upgrade_advanced_to_epic` siguiendo la misma estructura.
+
+---
+
+## Próximos pasos
+
+- Agregar `upgrade_advanced_to_epic` en `entries`.
+- Emitir eventos (`MintedEvent`, `UpgradedEvent`, `FeeChargedEvent`) para trazabilidad.
+- Reemplazar la tesorería fija por un objeto configurable.
+- Crear pruebas unitarias (`#[test]`) para upgrades, cobro de tarifas y validaciones.
+- Centralizar constantes en un módulo `constants.move`.
