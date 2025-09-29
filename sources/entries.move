@@ -28,6 +28,26 @@ module bali_shield::entries {
         logic::upgrade_shield(shield);
     }
 
+    public fun upgrade_advanced_to_epic(
+        shield: &mut types::Shield,
+        fee_coin: &mut coin::Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        if (!types::is_advanced(types::shield_type(shield))) {
+            abort errors::wrong_tier()
+        };
+
+        fees::charge_fee<SUI>(
+            fee_coin,
+            fees::advanced_to_epic_fee(),
+            fees::treasury(),
+            errors::insufficient_fee(),
+            ctx
+        );
+
+        logic::upgrade_shield(shield);
+    }
+
     // Crear un shield básico
     public fun create_basic_shield(ctx: &mut TxContext): types::Shield {
         types::make_basic(ctx)

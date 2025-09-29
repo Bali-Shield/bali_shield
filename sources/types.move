@@ -94,4 +94,15 @@ module bali_shield::types {
             ShieldType::Epic { .. } => { /* max tier */ },
         }
     }
+
+        /// Construye un ShieldType a partir de un tag numérico
+    public fun from_u8(tag: u8): ShieldType {
+        match (tag) {
+            0 => ShieldType::Basic { bonus_resistance: 10 },
+            1 => ShieldType::Advanced { bonus_power: 30 },
+            2 => ShieldType::Epic { bonus_value: 50 },
+            _ => ShieldType::Basic { bonus_resistance: 0 },
+        }
+    }
+
 }

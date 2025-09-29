@@ -18,8 +18,9 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-bali_shield = "0x2d809070844f458e5bcb1164220ec8ee2c1e5d55967b2239596be329c56f748a"
+bali_shield = "0xb14d9e69a8492e433c17d0aba77dee13e8ae0a8c91d1e57b58c026d1d2446405"
 treasury = "0xa306289e3b4ff45ea6d6112d4a524ed46d731583c1f424240709b68c94a678c2"
+#bali_shield_v0 = 0x2d809070844f458e5bcb1164220ec8ee2c1e5d55967b2239596be329c56f748a
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
