@@ -1,6 +1,10 @@
 module bali_shield::fees {
     use sui::coin;
     use sui::tx_context::TxContext;
+    use sui::tx_context::sender;
+    
+    use sui::event;
+    use bali_shield::events;
 
     // Internal constants (not public directly)
     const BASIC_TO_ADVANCED_FEE: u64 = 100_000_000;  // 0.1 SUI
@@ -25,5 +29,13 @@ module bali_shield::fees {
         };
         let fee_part = coin::split(from, amount, ctx);
         sui::transfer::public_transfer(fee_part, to);
+
+        events::emit_fee_paid(
+            sender(ctx),
+            amount,
+            b"SUI" // hardcodeado por ahora
+        );
     }
+
+    
 }

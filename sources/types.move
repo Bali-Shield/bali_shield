@@ -105,4 +105,29 @@ module bali_shield::types {
         }
     }
 
+    public fun id_as_address(id: &UID): address {
+        object::uid_to_address(id)
+    }
+
+    public fun shield_id_address(s: &Shield): address {
+        object::uid_to_address(&s.id)
+    }
+
+    public fun resistance_of(s: &Shield): u64 {
+        s.resistance
+    }
+
+    public fun power_of(s: &Shield): u64 {  
+        s.power
+    }
+
+    public fun value_of(s: &Shield): u64 {
+        s.value
+    }
+
+    public fun shield_type_of(s: &Shield): &ShieldType {
+        &s.stype
+    }
+
+
 }

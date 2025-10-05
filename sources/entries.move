@@ -1,5 +1,5 @@
 module bali_shield::entries {
-    use sui::tx_context::TxContext;
+    use sui::tx_context::{TxContext, sender};
     use sui::coin;
     use sui::sui::SUI;
 
@@ -7,6 +7,7 @@ module bali_shield::entries {
     use bali_shield::logic;
     use bali_shield::fees;
     use bali_shield::errors;
+    use bali_shield::events;
 
     public fun upgrade_basic_to_advanced(
         shield: &mut types::Shield,
@@ -26,6 +27,13 @@ module bali_shield::entries {
         );
 
         logic::upgrade_shield(shield);
+
+        events::emit_shield_upgraded(
+            sender(ctx),
+            types::shield_id_address(shield),
+            0, // old_tier
+            1  // new_tier
+        );
     }
 
     public fun upgrade_advanced_to_epic(
@@ -46,10 +54,24 @@ module bali_shield::entries {
         );
 
         logic::upgrade_shield(shield);
+
+        events::emit_shield_upgraded(
+            sender(ctx),
+            types::shield_id_address(shield),
+            1, // old_tier
+            2  // new_tier
+        );
     }
 
-    // Crear un shield básico
     public fun create_basic_shield(ctx: &mut TxContext): types::Shield {
-        types::make_basic(ctx)
+        let shield = types::make_basic(ctx);
+
+        events::emit_shield_created(
+            sender(ctx),
+            types::shield_id_address(&shield),
+            0
+        );
+
+        shield
     }
 }
