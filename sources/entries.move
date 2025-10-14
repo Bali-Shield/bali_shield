@@ -1,70 +1,18 @@
 module bali_shield::entries {
-    use sui::tx_context::{TxContext, sender};
-    use sui::coin;
-    use bali_shield::types;
-    use bali_shield::logic;
-    use bali_shield::fees;
-    use bali_shield::errors;
-    use bali_shield::events;
-    use bali_shield::shield_coin;
+    use sui::tx_context::{TxContext};
+    use std::option;
+    use bali_shield::shield_factory;
 
-    public fun upgrade_basic_to_advanced(
-        shield: &mut types::Shield,
-        fee_coin: &mut coin::Coin<shield_coin::SHIELD_COIN>,
+    /// Crea un Shield del tipo especificado y lo asigna al usuario o al destinatario indicado.
+    ///
+    /// - `tier`: 0 = Basic, 1 = Advanced, 2 = Epic
+    /// - `recipient`: dirección opcional (si `None`, se mintea al caller)
+    public entry fun create_shield(
+        tier: u8,
+        recipient: option::Option<address>,
         ctx: &mut TxContext
     ) {
-        if (!types::is_basic(types::shield_type(shield))) {
-            abort errors::wrong_tier()
-        };
-
-        fees::charge_fee(
-            fee_coin,
-            fees::basic_to_advanced_fee(),
-            fees::treasury(),
-            errors::insufficient_fee(),
-            ctx
-        );
-
-        logic::upgrade_shield(shield);
-
-        events::emit_shield_upgraded(
-            sender(ctx),
-            types::shield_id_address(shield),
-            0, 1
-        );
+        // Llama directamente a la factory para crear el tipo correcto
+        shield_factory::mint_shield(tier, recipient, ctx);
     }
-
-    public fun upgrade_advanced_to_epic(
-        shield: &mut types::Shield,
-        fee_coin: &mut coin::Coin<shield_coin::SHIELD_COIN>,
-        ctx: &mut TxContext
-    ) {
-        if (!types::is_advanced(types::shield_type(shield))) {
-            abort errors::wrong_tier()
-        };
-
-        fees::charge_fee(
-            fee_coin,
-            fees::advanced_to_epic_fee(),
-            fees::treasury(),
-            errors::insufficient_fee(),
-            ctx
-        );
-
-        logic::upgrade_shield(shield);
-
-        events::emit_shield_upgraded(
-            sender(ctx),
-            types::shield_id_address(shield),
-            1, 2
-        );
-    }
-
-    public entry fun create_basic_shield(ctx: &mut TxContext) {
-        use sui::transfer;
-
-        let shield = logic::create_basic_shield(ctx);
-        transfer::public_transfer(shield, sender(ctx));
-    }
-
 }
